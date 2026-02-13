@@ -1,0 +1,46 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model LongDistance {
+  id                Int      @id @default(autoincrement())
+  driverName        String
+  vehicleNo         String
+  tonnage           String?
+  region            String?
+  currentAllowance  Int      @default(0)
+  note              String?
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  history           LongDistanceHistory[]
+}
+
+model LongDistanceHistory {
+  id             Int          @id @default(autoincrement())
+  vehicleId      Int
+  year           String
+  applyDate      DateTime
+  amount         Int
+  reason         String?
+  createdAt      DateTime     @default(now())
+  
+  vehicle        LongDistance @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  password  String
+  role      String   @default("USER")
+  createdAt DateTime @default(now())
+}

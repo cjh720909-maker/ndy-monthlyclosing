@@ -1,0 +1,8 @@
+{
+  "/billing/additional-cost/page": "app/billing/additional-cost/page.js",
+  "/billing/long-distance/page": "app/billing/long-distance/page.js",
+  "/page": "app/page.js",
+  "/settlement/absence/page": "app/settlement/absence/page.js",
+  "/settlement/picking/page": "app/settlement/picking/page.js",
+  "/settlement/turn2/page": "app/settlement/turn2/page.js"
+}

@@ -1,0 +1,20 @@
+{
+  "node": {
+    "60724d0e1a7f4f2edb2322c97ca8b5143405ac6b56": {
+      "workers": {
+        "app/settlement/absence/page": {
+          "moduleId": "[project]/.next-internal/server/app/settlement/absence/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/app/settlement/absence/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "getAbsenceData",
+          "filename": "src/app/settlement/absence/actions.ts"
+        }
+      },
+      "layer": {
+        "app/settlement/absence/page": "action-browser"
+      },
+      "exportedName": "getAbsenceData",
+      "filename": "src/app/settlement/absence/actions.ts"
+    }
+  },
+  "edge": {}
+}

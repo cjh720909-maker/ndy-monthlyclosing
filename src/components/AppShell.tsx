@@ -25,7 +25,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Menu size={22} className="group-hover:rotate-180 transition-transform duration-500" />
             </button>
           )}
-          <main className="flex-1 overflow-x-hidden p-4 md:p-8 pb-12 flex flex-col h-full">
+          <main className="flex-1 overflow-x-hidden p-0 flex flex-col h-full">
             <TabManager />
           </main>
         </div>

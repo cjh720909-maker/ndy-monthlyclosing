@@ -1,191 +1,158 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Calendar, 
   Search, 
-  RotateCcw, 
-  ChevronLeft, 
-  ChevronRight,
-  TrendingUp,
-  Package,
-  Layers,
-  DollarSign
+  Download, 
+  Loader2,
+  AlertCircle 
 } from 'lucide-react';
+import { getPickingSettlement } from './actions';
 
 export default function PickingSettlementPage() {
-  const [startDate, setStartDate] = useState('2024-02-01');
-  const [endDate, setEndDate] = useState('2024-02-29');
+  const [year, setYear] = useState(new Date().getFullYear().toString());
+  const [month, setMonth] = useState((new Date().getMonth() + 1).toString().padStart(2, '0'));
+  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState<any[]>([]);
 
-  // Dummy data for matrix representation
-  const centers = ['신선센터', '상온센터', '허브센터'];
-  const dates = Array.from({ length: 15 }, (_, i) => `2024-02-${(i + 1).toString().padStart(2, '0')}`);
+  useEffect(() => {
+    fetchData();
+  }, [year, month]);
+
+  const fetchData = async () => {
+    setLoading(true);
+    const result = await getPickingSettlement(year, month);
+    if (result.success) {
+      setData(result.data || []);
+    }
+    setLoading(false);
+  };
+
+  const totalAmount = data.reduce((sum, item) => sum + item.totalAmount, 0);
 
   return (
-    <div className="space-y-6 relative">
-
-
-      {/* Sticky Filter Bar */}
-      <div className="sticky top-0 z-30 -mx-4 md:-mx-8 px-4 md:px-8 py-4 bg-slate-100/80 backdrop-blur-md border-b border-slate-200/60 transition-all">
-        <div className="glass rounded-2xl border border-white shadow-[0_8px_20px_rgb(0,0,0,0.04)] p-4 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            {/* Date Range Picker */}
-            <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-slate-200">
-              <Calendar size={16} className="text-indigo-500" />
-              <div className="flex items-center gap-2">
-                <input 
-                  type="date" 
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="bg-transparent border-none text-[13px] font-bold text-slate-700 focus:ring-0 cursor-pointer"
-                />
-                <ChevronRight size={14} className="text-slate-300" />
-                <input 
-                  type="date" 
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="bg-transparent border-none text-[13px] font-bold text-slate-700 focus:ring-0 cursor-pointer"
-                />
-              </div>
-            </div>
-
-            {/* Presets */}
-            <div className="flex gap-1.5 bg-slate-100 p-1 rounded-xl">
-              {['당월', '전월', '15일', '정산주기'].map((preset) => (
-                <button 
-                  key={preset}
-                  className={`px-3 py-1.5 text-[12px] font-bold rounded-lg transition-all ${
-                    preset === '당월' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                >
-                  {preset}
-                </button>
+    <div className="max-w-7xl mx-auto h-full flex flex-col">
+      {/* Filter Bar */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6 bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 bg-slate-50 p-1 rounded-lg border border-slate-200">
+            <select 
+              value={year}
+              onChange={(e) => setYear(e.target.value)}
+              className="bg-transparent text-sm font-bold text-slate-700 py-1.5 px-3 focus:outline-none"
+            >
+              <option value="2024">2024년</option>
+              <option value="2025">2025년</option>
+              <option value="2026">2026년</option>
+            </select>
+            <div className="w-px h-4 bg-slate-300"></div>
+            <select 
+              value={month}
+              onChange={(e) => setMonth(e.target.value)}
+              className="bg-transparent text-sm font-bold text-slate-700 py-1.5 px-3 focus:outline-none"
+            >
+              {[...Array(12)].map((_, i) => (
+                <option key={i + 1} value={(i + 1).toString().padStart(2, '0')}>
+                  {i + 1}월
+                </option>
               ))}
-            </div>
+            </select>
           </div>
+          <button 
+            onClick={fetchData}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200"
+          >
+            <Search size={14} />
+            조회
+          </button>
+        </div>
 
-          <div className="flex gap-2">
-            <button className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl text-[13px] font-bold hover:bg-slate-50 transition-all active:scale-95 shadow-sm">
-              <RotateCcw size={16} />
-              초기화
-            </button>
-            <button className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white rounded-xl text-[13px] font-bold hover:bg-indigo-700 transition-all active:scale-95 shadow-[0_4px_12px_rgba(79,70,229,0.3)]">
-              <Search size={16} />
-              조회하기
-            </button>
-          </div>
+        <div className="flex items-center gap-2">
+            <div className="bg-slate-900 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg shadow-slate-200">
+                <span className="opacity-70 mr-2 text-xs font-normal">총 지급액</span>
+                ₩ {totalAmount.toLocaleString()}
+            </div>
         </div>
       </div>
 
-      {/* Status Badges */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: '전체 정산 건수', value: '1,248건', icon: Package, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-          { label: '정산 대상 일수', value: '29일', icon: Calendar, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-          { label: '평균 일일 물동량', value: '43.2 PL', icon: TrendingUp, color: 'text-blue-600', bg: 'bg-blue-50' },
-          { label: '총 정산 금액', value: '₩24,850,000', icon: DollarSign, color: 'text-amber-600', bg: 'bg-amber-50' },
-        ].map((stat, i) => (
-          <div key={i} className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex items-center gap-4">
-            <div className={`p-3 rounded-xl ${stat.bg} ${stat.color}`}>
-              <stat.icon size={20} />
-            </div>
-            <div>
-              <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">{stat.label}</p>
-              <p className="text-lg font-bold text-slate-800">{stat.value}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Pivot Grid Table Section */}
-      <div className="glass rounded-3xl border border-white shadow-[0_20px_50px_rgba(0,0,0,0.04)] overflow-hidden">
-        <div className="overflow-x-auto max-h-[600px] custom-scrollbar">
-          <table className="w-full text-left border-collapse min-w-[1200px]">
-            <thead className="sticky top-0 z-20 bg-slate-50/95 backdrop-blur-sm border-b border-slate-200">
-              {/* Double Header: Center Layer */}
+      {/* Data Table */}
+      <div className="flex-1 overflow-auto bg-white rounded-2xl border border-slate-200 shadow-sm relative">
+        <table className="w-full text-sm text-left">
+          <thead className="bg-slate-50 text-slate-500 font-medium text-xs uppercase tracking-wider sticky top-0 z-10">
+            <tr>
+              <th className="px-6 py-3 border-b text-center w-16">No</th>
+              <th className="px-6 py-3 border-b">기사명</th>
+              <th className="px-6 py-3 border-b text-right">기본급+수당</th>
+              <th className="px-6 py-3 border-b text-center">시급 (시간)</th>
+              <th className="px-6 py-3 border-b text-right text-red-500">차감액 (결근)</th>
+              <th className="px-6 py-3 border-b text-right text-blue-500">연장수당</th>
+              <th className="px-6 py-3 border-b text-right font-bold text-slate-900 bg-slate-100/50">총지급액</th>
+              <th className="px-6 py-3 border-b text-center w-24">비고</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {loading ? (
               <tr>
-                <th className="sticky left-0 z-30 bg-slate-50 px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest border-r border-slate-100 min-w-[120px]">
-                  정산 일자
-                </th>
-                {centers.map(center => (
-                  <th key={center} colSpan={2} className="px-6 py-3 text-[12px] font-bold text-slate-700 text-center border-r border-slate-100 bg-slate-100/50">
-                    {center}
-                  </th>
-                ))}
-                <th colSpan={3} className="sticky right-0 z-30 bg-indigo-50/90 px-6 py-3 text-[12px] font-bold text-indigo-900 text-center">
-                  일자별 합계 요약
-                </th>
+                <td colSpan={8} className="py-20 text-center text-slate-400">
+                  <div className="flex flex-col items-center gap-3">
+                    <Loader2 className="animate-spin text-indigo-500" size={32} />
+                    <span>데이터를 불러오는 중...</span>
+                  </div>
+                </td>
               </tr>
-              {/* Double Header: Unit Layer */}
-              <tr className="border-b border-slate-200">
-                <th className="sticky left-0 z-30 bg-slate-50 border-r border-slate-100"></th>
-                {centers.map(center => (
-                  <React.Fragment key={`${center}-units`}>
-                    <th className="px-4 py-2 text-[10px] font-bold text-slate-500 text-center bg-white border-r border-slate-50">BOX</th>
-                    <th className="px-4 py-2 text-[10px] font-bold text-slate-500 text-center bg-white border-r border-slate-100">PL</th>
-                  </React.Fragment>
-                ))}
-                <th className="sticky right-[160px] z-30 bg-indigo-50 px-4 py-2 text-[10px] font-bold text-indigo-600 text-center border-l border-indigo-100">BOX 합계</th>
-                <th className="sticky right-[80px] z-30 bg-emerald-50 px-4 py-2 text-[10px] font-bold text-emerald-600 text-center border-l border-emerald-100">PL 합계</th>
-                <th className="sticky right-0 z-30 bg-amber-50 px-4 py-2 text-[10px] font-bold text-amber-600 text-center border-l border-amber-100">정산 금액</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white">
-              {dates.map((date, idx) => (
-                <tr key={date} className={`group hover:bg-slate-50 transition-colors ${idx % 7 === 5 || idx % 7 === 6 ? 'bg-slate-50/30' : ''}`}>
-                  <td className="sticky left-0 z-10 bg-inherit px-6 py-4 text-[13px] font-bold text-slate-600 border-r border-slate-100">
-                    {date}
-                    <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded ${
-                      idx % 7 === 5 ? 'bg-indigo-100 text-indigo-600' : idx % 7 === 6 ? 'bg-rose-100 text-rose-600' : 'bg-slate-100 text-slate-400'
-                    }`}>
-                      {['월', '화', '수', '목', '금', '토', '일'][idx % 7]}
-                    </span>
-                  </td>
-                  {centers.map(center => (
-                    <React.Fragment key={`${date}-${center}`}>
-                      <td className="px-4 py-4 text-[13px] font-medium text-slate-700 text-center border-r border-slate-50">
-                        {Math.floor(Math.random() * 100)}
-                      </td>
-                      <td className="px-4 py-4 text-[13px] font-medium text-slate-700 text-center border-r border-slate-100">
-                        {Math.floor(Math.random() * 5)}
-                      </td>
-                    </React.Fragment>
-                  ))}
-                  {/* Summary Columns */}
-                  <td className="sticky right-[160px] z-10 bg-indigo-50/30 group-hover:bg-indigo-50 px-4 py-4 text-[13px] font-black text-indigo-700 text-center border-l border-indigo-100">
-                    245
-                  </td>
-                  <td className="sticky right-[80px] z-10 bg-emerald-50/30 group-hover:bg-emerald-50 px-4 py-4 text-[13px] font-black text-emerald-700 text-center border-l border-emerald-100">
-                    12.5
-                  </td>
-                  <td className="sticky right-0 z-10 bg-amber-50/30 group-hover:bg-amber-50 px-4 py-4 text-[13px] font-black text-amber-700 text-center border-l border-amber-100">
-                    850,000
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-            <tfoot className="sticky bottom-0 z-20 bg-slate-800 text-white font-bold">
+            ) : data.length === 0 ? (
               <tr>
-                <td className="sticky left-0 z-30 bg-slate-900 px-6 py-4 text-[12px] uppercase">총계 (Summary)</td>
-                {centers.map(center => (
-                  <React.Fragment key={`${center}-total`}>
-                    <td className="px-4 py-4 text-center border-r border-slate-700">1,240</td>
-                    <td className="px-4 py-4 text-center border-r border-slate-600">64.5</td>
-                  </React.Fragment>
-                ))}
-                <td className="sticky right-[160px] z-30 bg-indigo-900 px-4 py-4 text-center border-l border-indigo-800">3,720</td>
-                <td className="sticky right-[80px] z-30 bg-emerald-900 px-4 py-4 text-center border-l border-emerald-800">193.5</td>
-                <td className="sticky right-0 z-30 bg-amber-600 px-4 py-4 text-center border-l border-amber-500">12,500,000</td>
+                <td colSpan={8} className="py-20 text-center text-slate-400">
+                  조회된 데이터가 없습니다.
+                </td>
               </tr>
-            </tfoot>
-          </table>
-        </div>
+            ) : (
+                data.map((item, index) => (
+                    <tr key={item.id} className="hover:bg-slate-50/80 transition-colors group">
+                        <td className="px-6 py-4 text-center text-slate-400 font-mono text-xs">
+                            {(index + 1).toString().padStart(2, '0')}
+                        </td>
+                        <td className="px-6 py-4 font-bold text-slate-700">
+                            {item.name}
+                            {item.absentDays > 0 && (
+                                <span className="ml-2 px-1.5 py-0.5 bg-red-100 text-red-600 text-[10px] rounded font-medium">
+                                    결근 {item.absentDays}일
+                                </span>
+                            )}
+                        </td>
+                        <td className="px-6 py-4 text-right font-mono text-slate-600">
+                            {(item.baseRate + item.allowance).toLocaleString()}
+                        </td>
+                        <td className="px-6 py-4 text-center font-mono text-slate-500 text-xs">
+                            {item.hourlyRate.toLocaleString()}원
+                            <span className="block text-slate-400">({item.workingHours}hr)</span>
+                        </td>
+                        <td className="px-6 py-4 text-right font-mono text-red-500 font-medium">
+                            {item.deduction > 0 ? `-${item.deduction.toLocaleString()}` : '-'}
+                        </td>
+                        <td className="px-6 py-4 text-right font-mono text-blue-500 font-medium">
+                            {item.addition > 0 ? `+${item.addition.toLocaleString()}` : '-'}
+                            {item.overtimeHours > 0 && (
+                                <span className="block text-[10px] text-blue-400">({item.overtimeHours}hr)</span>
+                            )}
+                        </td>
+                        <td className="px-6 py-4 text-right font-mono font-black text-indigo-900 bg-indigo-50/30 group-hover:bg-indigo-50/50 transition-colors">
+                            {item.totalAmount.toLocaleString()}
+                        </td>
+                        <td className="px-6 py-4 text-center text-xs text-slate-400 truncate max-w-[200px]">
+                            {item.note}
+                        </td>
+                    </tr>
+                ))
+            )}
+          </tbody>
+        </table>
       </div>
       
-      {/* Footer Info */}
-      <div className="flex justify-between items-center text-[11px] text-slate-400 font-medium px-2">
-        <p>* 모든 데이터는 실시간 집계를 기준으로 하며, 공식 정산 금액과 차이가 있을 수 있습니다.</p>
-        <p>최종 업데이트: 2024-02-12 00:30:15</p>
+      <div className="mt-4 flex items-center justify-end gap-2 text-xs text-slate-400">
+        <AlertCircle size={14} />
+        <span>일할 계산: (기본급+수당)/26  |  시급: 일할/근무시간  |  연장수당: 시급×연장시간</span>
       </div>
     </div>
   );

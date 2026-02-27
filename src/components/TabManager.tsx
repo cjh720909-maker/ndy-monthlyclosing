@@ -23,7 +23,7 @@ export default function TabManager() {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Tab Bar */}
-      <div className="flex items-center gap-1 border-b border-slate-200 bg-slate-50/50 pt-1 px-4 shrink-0 overflow-x-auto">
+      <div className="flex items-center gap-0.5 border-b border-slate-200 bg-slate-50/50 px-2 shrink-0 overflow-x-auto h-[20px] min-h-[20px]">
         {tabs.map((tab) => {
           const isActive = tab.id === activeTabId;
           return (
@@ -31,7 +31,8 @@ export default function TabManager() {
               key={tab.id}
               onClick={() => setActiveTabId(tab.id)}
               className={`
-                group relative flex items-center gap-2 px-3 py-1 text-xs font-bold rounded-t-lg cursor-pointer transition-colors border-t border-x
+                group relative flex items-center gap-1 px-2 h-full text-[11px] font-bold rounded-t-md cursor-pointer transition-colors border-t border-x
+                leading-none select-none
                 ${isActive 
                   ? 'bg-white border-slate-200 text-indigo-600 z-10 -mb-[1px] border-b-white' 
                   : 'bg-slate-100 border-transparent text-slate-500 hover:bg-slate-200 hover:text-slate-700'}
@@ -56,7 +57,7 @@ export default function TabManager() {
       </div>
 
       {/* Content Area (Keep-Alive) */}
-      <div className="flex-1 overflow-auto bg-white p-6 relative">
+      <div className="flex-1 overflow-auto bg-white p-4 relative">
         {tabs.map((tab) => (
           <div 
             key={tab.id} 

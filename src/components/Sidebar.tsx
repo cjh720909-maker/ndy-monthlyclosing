@@ -8,11 +8,20 @@ import {
   Truck,
   ChevronRight,
   Menu,
-  CalendarX
+  CalendarX,
+  CreditCard as PaymentIcon
 } from 'lucide-react';
+
 
 // Import Pages explicitly for Tab Mapping
 import MonthlyClosingDashboard from '@/app/monthly-closing/page';
+import PickingSettlementPage from '@/app/settlement/picking/page';
+import AdditionalCostPage from '@/app/billing/additional-cost/page';
+import LongDistanceVehiclePage from '@/app/billing/long-distance/page';
+import VehicleAbsencePage from '@/app/settlement/absence/page';
+import Turn2VehiclePage from '@/app/settlement/turn2/page';
+import OvertimePage from '@/app/settlement/overtime/page';
+import MonthlyVehicleCostPage from '@/app/settlement/monthly-vehicle-cost/page';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -26,6 +35,55 @@ const menuItems = [
     enName: 'Monthly Closing', 
     component: <MonthlyClosingDashboard />,
     icon: CreditCard 
+  },
+  { 
+    id: 'picking',
+    name: '피킹 파트 정산', 
+    enName: 'Picking Settlement', 
+    component: <PickingSettlementPage />,
+    icon: CreditCard 
+  },
+  { 
+    id: 'additional-cost',
+    name: '추가 비용 등록', 
+    enName: 'Additional Cost', 
+    component: <AdditionalCostPage />,
+    icon: PenTool 
+  },
+  { 
+    id: 'long-distance',
+    name: '장거리 및 기타 추가 등록', 
+    enName: 'Long-distance Truck', 
+    component: <LongDistanceVehiclePage />,
+    icon: Truck 
+  },
+  { 
+    id: 'absence',
+    name: '차량 결근 조회', 
+    enName: 'Vehicle Absence', 
+    component: <VehicleAbsencePage />,
+    icon: CalendarX 
+  },
+  { 
+    id: 'turn2',
+    name: '이회전 차량 조회', 
+    enName: '2nd Turn Vehicle', 
+    component: <Turn2VehiclePage />,
+    icon: Truck 
+  },
+  { 
+    id: 'overtime-inquiry',
+    name: '연장 시간 조회', 
+    enName: 'Overtime Inquiry', 
+    component: <OvertimePage />,
+    icon: CalendarX 
+  },
+  { 
+    id: 'monthly-vehicle-cost',
+    name: '고정차량 월 지급액', 
+    enName: 'Monthly Fixed Cost', 
+    component: <MonthlyVehicleCostPage />,
+    icon: PaymentIcon 
   },
 ];
 

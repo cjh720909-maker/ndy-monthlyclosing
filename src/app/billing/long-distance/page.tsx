@@ -80,7 +80,8 @@ export default function LongDistanceVehiclePage() {
         
         if (result.success) {
            // alert('저장되었습니다.');
-           window.location.reload(); 
+           await loadData();
+           handleNew(); // 저장/수정 후 폼 자동 초기화
         } else {
             alert(`저장 실패: ${result.error}`);
         }
@@ -131,38 +132,37 @@ export default function LongDistanceVehiclePage() {
                 key={v.id}
                 onClick={() => handleSelect(v)}
                 className={`
-                  group p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between
+                  group px-3 py-2 rounded-xl border cursor-pointer transition-all flex items-center justify-between
                   ${selectedId === v.id 
                     ? 'bg-indigo-50 border-indigo-200 ring-1 ring-indigo-200' 
                     : 'bg-white border-slate-100 hover:border-indigo-100 hover:shadow-sm'}
                 `}
               >
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
                   <div className={`
-                    w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold
+                    w-8 h-8 rounded-full flex items-center justify-center text-base font-bold shrink-0
                     ${selectedId === v.id ? 'bg-indigo-200 text-indigo-700' : 'bg-slate-100 text-slate-500'}
                   `}>
                     {v.driverName.charAt(0)}
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-slate-800">{v.driverName}</span>
-                      <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded text-xs">{v.tonnage}</span>
+                  <div className="min-w-0">
+                    <div className="flex items-center flex-wrap gap-x-2 gap-y-0.5">
+                      <span className="text-[13px] font-bold text-slate-800 truncate">{v.driverName}</span>
+                      <span className="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-bold">{v.tonnage}</span>
+                      <span className="text-[11px] text-indigo-500 font-bold">{v.region}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-0.5">
+                    <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5">
                       <span className="font-sans">{v.vehicleNo}</span>
-                      <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
-                      <span>{v.region}</span>
                     </div>
                   </div>
                 </div>
                 
-                <div className="text-right">
-                  <div className="text-sm font-bold text-slate-800 font-sans">
+                <div className="text-right shrink-0 ml-4">
+                  <div className="text-[13px] font-bold text-slate-800 font-sans">
                     ₩{v.allowance?.toLocaleString()}
                   </div>
-                  <div className="text-[10px] text-slate-400">
-                    {currentYear}년 기준
+                  <div className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">
+                    {currentYear}
                   </div>
                 </div>
               </div>

@@ -39,7 +39,7 @@ export default function MonthlyClosingDashboard() {
     },
     { 
       id: 'long-distance',
-      name: '장거리 차량 등록', 
+      name: '장거리 및 기타 추가 등록', 
       desc: 'Long-distance Truck', 
       component: <LongDistanceVehiclePage />,
       icon: Truck,

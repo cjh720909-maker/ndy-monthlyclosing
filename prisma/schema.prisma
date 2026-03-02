@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -19,6 +19,8 @@ model LongDistance {
   createdAt        DateTime              @default(now())
   updatedAt        DateTime              @updatedAt
   history          LongDistanceHistory[]
+
+  @@map("NMC_LongDistance")
 }
 
 model LongDistanceHistory {
@@ -30,6 +32,8 @@ model LongDistanceHistory {
   reason    String?
   createdAt DateTime     @default(now())
   vehicle   LongDistance @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@map("NMC_LongDistanceHistory")
 }
 
 model User {
@@ -38,6 +42,8 @@ model User {
   password  String
   role      String   @default("USER")
   createdAt DateTime @default(now())
+
+  @@map("NMC_User")
 }
 
 model AdditionalCost {
@@ -51,6 +57,8 @@ model AdditionalCost {
   workingHours Float    @default(9)
   note         String?
   createdAt    DateTime @default(now())
+
+  @@map("NMC_AdditionalCost")
 }
 
 model MonthlyVehicleCost {
@@ -68,4 +76,5 @@ model MonthlyVehicleCost {
   updatedAt   DateTime @updatedAt
 
   @@unique([year, workingDays])
+  @@map("NMC_MonthlyVehicleCost")
 }

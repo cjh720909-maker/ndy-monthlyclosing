@@ -3,6 +3,7 @@
 import pool from '@/lib/db';
 import { RowDataPacket } from 'mysql2';
 import iconv from 'iconv-lite';
+import { formatDate } from '@/lib/utils';
 
 export interface AbsenceRecord {
   date: string;
@@ -30,8 +31,6 @@ export async function getAbsenceData(startDate: string, endDate: string) {
       FROM t_car 
       WHERE CA_DOCKNO IS NOT NULL 
         AND CA_DOCKNO != ''
-        AND CA_NO IS NOT NULL
-        AND CA_NO != ''
     `);
 
     // Filter by Dock Range 1~40
@@ -54,33 +53,35 @@ export async function getAbsenceData(startDate: string, endDate: string) {
     // 2. Fetch Dispatches from t_balju (Cast to BINARY)
     // User Guide: "Search using CB_DRIVER in t_balju... if match found, that CA_NAME is present."
     const [dispatches] = await connection.execute<RowDataPacket[]>(`
-      SELECT DISTINCT B_DATE, CAST(CB_DRIVER AS BINARY) as CB_DRIVER_BIN
+      SELECT B_DATE, CAST(CB_DRIVER AS BINARY) as CB_DRIVER_BIN
       FROM t_balju 
       WHERE B_DATE BETWEEN ? AND ?
     `, [startDate, endDate]);
 
     // 3. Process Absence
     const absenceList: AbsenceRecord[] = [];
-    const dispatchMap = new Set<string>();
+    const dispatchMap = new Map<string, Set<string>>(); // Date -> Set of Cleaned Driver Names
+    const dailyDispatchCount = new Map<string, number>(); // Date -> Total Dispatches
 
     dispatches.forEach((d: any) => {
-      // t_balju uses B_DATE
       const dateStr = formatDate(new Date(d.B_DATE));
-      // Decode dispatch driver name
-      const dispatchDriver = iconv.decode(d.CB_DRIVER_BIN as Buffer, 'euckr');
-      dispatchMap.add(`${dateStr}|${dispatchDriver}`);
+      
+      // Update daily count
+      dailyDispatchCount.set(dateStr, (dailyDispatchCount.get(dateStr) || 0) + 1);
+
+      // Decode and clean dispatch driver name
+      const rawDispatchDriver = iconv.decode(d.CB_DRIVER_BIN as Buffer, 'euckr');
+      const cleanDispatchDriver = cleanName(rawDispatchDriver);
+      
+      if (!dispatchMap.has(dateStr)) {
+        dispatchMap.set(dateStr, new Set());
+      }
+      dispatchMap.get(dateStr)!.add(cleanDispatchDriver);
     });
 
     const start = new Date(startDate);
     const end = new Date(endDate);
 
-    // Create a map of CA_NAME -> List of CB_DRIVERs (Aliases)
-    // A single CA_NAME might have multiple CB_DRIVER entries in t_car (according to user)
-    // Or we just check if *any* target driver with same CA_NAME has a match.
-    // Actually, t_car rows ARE the drivers. 
-    // If t_car has (CA_NAME='Kim', CB_DRIVER='KimA') and (CA_NAME='Kim', CB_DRIVER='KimB')
-    // We should treat 'Kim' as present if either 'KimA' or 'KimB' is in t_balju.
-    
     // Group drivers by CA_NAME
     const driversByName: Record<string, typeof targetDrivers> = {};
     targetDrivers.forEach(d => {
@@ -90,39 +91,62 @@ export async function getAbsenceData(startDate: string, endDate: string) {
 
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
       const day = d.getDay();
-      // Mon(1) ~ Fri(5)
-      if (day === 0 || day === 6) continue;
-
       const dateStr = formatDate(d);
+      
+      // 1. Skip Sunday(0)
+      if (day === 0) continue;
+
+      // 2. Intelligent Working Day Determination
+      // [최팀장님 지시] 전체 배차 건수가 2000건 미만이면 설 연휴 등 휴무로 간주합니다.
+      // 향후 이 숫자는 최팀장님 요청에 따라 조정 가능합니다. (평시 평균 약 5000건)
+      const totalDispatches = dailyDispatchCount.get(dateStr) || 0;
+      if (totalDispatches < 2000) continue;
+
       const dayOfWeekStr = getDayOfWeek(d);
+      const activeDriversOnDate = dispatchMap.get(dateStr) || new Set<string>();
 
       // Iterate uniq names
       for (const name of Object.keys(driversByName)) {
-        const variants = driversByName[name]; // All t_car rows for this person
-        
-        // Check if ANY of the variants' CB_DRIVER exists in dispatchMap for this date
-        // "If CB_DRIVER search hits... CA_NAME is not absent"
+        const variants = driversByName[name];
         let isPresent = false;
         
         for (const v of variants) {
-            if (dispatchMap.has(`${dateStr}|${v.CB_DRIVER}`)) {
+            const cleanDriver = cleanName(v.CB_DRIVER);
+            const cleanCar = cleanName(v.CA_NAME);
+            
+            // Match 1: Check by Driver Name (Exact or Included in dispatch)
+            if (activeDriversOnDate.has(cleanDriver)) {
                 isPresent = true;
                 break;
             }
+
+            // Match 2: Check by Car/Dispatch Name (Exact or Included in dispatch)
+            // Even if dispatch record doesn't have the driver name, 
+            // it often matches the CA_NAME in t_car.
+            if (cleanCar && activeDriversOnDate.has(cleanCar)) {
+                isPresent = true;
+                break;
+            }
+
+            // Match 3: Partial match for both
+            for (const activeDriver of activeDriversOnDate) {
+                if (activeDriver.includes(cleanDriver) || (cleanCar && activeDriver.includes(cleanCar))) {
+                    isPresent = true;
+                    break;
+                }
+            }
+            if (isPresent) break;
         }
 
         if (!isPresent) {
-            // Not found -> Absent
-            // We use the first variant to get display info (Phone, Vehicle No, Dock)
-            // Or we should list all? Usually just one is fine or the primary one.
-            const representative = variants[0];
-            
+            // Pick a representative that has a vehicle number and phone if possible
+            const representative = variants.find(v => v.CA_NO && v.CA_NO.trim() !== '') || variants[0];
             absenceList.push({
                 date: dateStr,
                 dayOfWeek: dayOfWeekStr,
-                driverName: name, // Display CA_NAME
-                vehicleNumber: representative.CA_NO,
-                phone: representative.CA_HP || '',
+                driverName: name,
+                vehicleNumber: representative.CA_NO || '',
+                phone: (variants.find(v => v.CA_HP && v.CA_HP.trim() !== '')?.CA_HP) || representative.CA_HP || '',
                 dockNumber: representative.CA_DOCKNO
             });
         }
@@ -194,14 +218,19 @@ export async function getAbsenceSummary(startDate: string, endDate: string): Pro
   }).sort((a, b) => a.driverName.localeCompare(b.driverName));
 }
 
-function formatDate(date: Date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
-
 function getDayOfWeek(date: Date) {
   const days = ['일', '월', '화', '수', '목', '금', '토'];
   return days[date.getDay()];
+}
+
+/**
+ * Removes parentheses, whitespace and special characters for cleaner matching
+ */
+function cleanName(name: string): string {
+    if (!name) return '';
+    // Remove text inside parentheses: "Heo(Dispatch)" -> "Heo"
+    let cleaned = name.replace(/\(.*\)/g, '');
+    // Remove whitespace and non-alphanumeric chars (keep Korean and Alphanum)
+    cleaned = cleaned.replace(/[^a-zA-Z0-9ㄱ-ㅎㅏ-ㅣ가-힣]/g, '');
+    return cleaned.trim();
 }

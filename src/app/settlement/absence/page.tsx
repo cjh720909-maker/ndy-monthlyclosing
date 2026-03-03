@@ -11,6 +11,7 @@ import {
   List
 } from 'lucide-react';
 import { getAbsenceData, getAbsenceSummary, AbsenceRecord, AbsenceSummary } from './actions';
+import { formatDate } from '@/lib/utils';
 
 export default function VehicleAbsencePage() {
   const [startDate, setStartDate] = useState(() => {
@@ -26,14 +27,6 @@ export default function VehicleAbsencePage() {
   const [detailResults, setDetailResults] = useState<AbsenceRecord[]>([]);
   const [summaryResults, setSummaryResults] = useState<AbsenceSummary[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-
-  // Helper to format date
-  function formatDate(date: Date) {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
-  }
 
   const handleSetThisMonth = () => {
     const now = new Date();

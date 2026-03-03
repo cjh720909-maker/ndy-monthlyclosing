@@ -4,6 +4,7 @@ import pool from '@/lib/db';
 import prisma from '@/lib/prisma'; // Prisma 추가
 import { RowDataPacket } from 'mysql2';
 import iconv from 'iconv-lite';
+import { formatDate } from '@/lib/utils';
 
 export interface OvertimeItem {
   id: number;
@@ -76,7 +77,7 @@ export async function getOvertimeData(startDate: string, endDate: string) {
       
       items.push({
         id: row.IK_IDX,
-        date: row.IK_DATE instanceof Date ? row.IK_DATE.toISOString().split('T')[0] : row.IK_DATE,
+        date: row.IK_DATE instanceof Date ? formatDate(row.IK_DATE) : row.IK_DATE,
         name,
         div,
         gubun,

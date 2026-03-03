@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma';
 import pool from '@/lib/db';
 import { RowDataPacket } from 'mysql2';
 import iconv from 'iconv-lite';
+import { formatDate } from '@/lib/utils';
 
 export interface PickingSettlementItem {
   id: number;
@@ -48,8 +49,8 @@ export async function getPickingSettlement(year: string, month: string) {
     // 2. Fetch t_il_kun Data for these drivers
     connection = await pool.getConnection();
 
-    const startStr = startDate.toISOString().split('T')[0];
-    const endStr = endDate.toISOString().split('T')[0];
+    const startStr = formatDate(startDate);
+    const endStr = formatDate(endDate);
 
     // We fetch ALL t_il_kun records for the date range to minimize queries, 
     // THEN match by name in memory. 

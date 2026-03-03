@@ -7,25 +7,27 @@ import {
   Loader2,
   Clock,
   User,
-  AlertCircle
+  AlertCircle,
+  ChevronRight
 } from 'lucide-react';
 import { getOvertimeData, OvertimeItem } from './actions';
+import { formatDate } from '@/lib/utils';
 
 export default function OvertimePage() {
   const [startDate, setStartDate] = useState(() => {
     const d = new Date();
     d.setDate(1);
-    return d.toISOString().split('T')[0];
+    return formatDate(d);
   });
-  const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [endDate, setEndDate] = useState(() => formatDate(new Date()));
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<OvertimeItem[]>([]);
   const [summary, setSummary] = useState<{name: string, total: number, count: number, totalAmount: number}[]>([]);
   const [standardRate, setStandardRate] = useState(0);
 
-  const handleSearch = async () => {
+  const handleSearch = async (s = startDate, e = endDate) => {
     setLoading(true);
-    const result = await getOvertimeData(startDate, endDate);
+    const result = await getOvertimeData(s, e);
     if (result.success && result.data) {
       setData(result.data);
       const rate = result.standardHourlyRate || 0;
@@ -33,6 +35,27 @@ export default function OvertimePage() {
       calculateSummary(result.data, rate);
     }
     setLoading(false);
+  };
+
+  const handleSetThisMonth = () => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    const s = formatDate(start);
+    const e = formatDate(now);
+    setStartDate(s);
+    setEndDate(e);
+    handleSearch(s, e);
+  };
+
+  const handleSetPrevMonth = () => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const end = new Date(now.getFullYear(), now.getMonth(), 0);
+    const s = formatDate(start);
+    const e = formatDate(end);
+    setStartDate(s);
+    setEndDate(e);
+    handleSearch(s, e);
   };
 
   const calculateSummary = (items: OvertimeItem[], rate: number) => {
@@ -84,8 +107,24 @@ export default function OvertimePage() {
               className="bg-transparent text-sm font-bold text-slate-700 py-1.5 px-2 focus:outline-none"
             />
           </div>
+
+          <div className="flex gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200">
+            <button 
+              onClick={handleSetThisMonth}
+              className="px-3 py-1.5 text-[12px] font-bold text-slate-600 hover:bg-white hover:text-indigo-600 hover:shadow-sm rounded-lg transition-all"
+            >
+              당월
+            </button>
+            <button 
+              onClick={handleSetPrevMonth}
+              className="px-3 py-1.5 text-[12px] font-bold text-slate-600 hover:bg-white hover:text-indigo-600 hover:shadow-sm rounded-lg transition-all"
+            >
+              전월
+            </button>
+          </div>
+
           <button 
-            onClick={handleSearch}
+            onClick={() => handleSearch()}
             className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200"
           >
             {loading ? <Loader2 className="animate-spin" size={14} /> : <Search size={14} />}

@@ -9,7 +9,8 @@ import {
   ChevronRight,
   Menu,
   CalendarX,
-  CreditCard as PaymentIcon
+  CreditCard as PaymentIcon,
+  Users
 } from 'lucide-react';
 
 
@@ -22,6 +23,7 @@ import VehicleAbsencePage from '@/app/settlement/absence/page';
 import Turn2VehiclePage from '@/app/settlement/turn2/page';
 import OvertimePage from '@/app/settlement/overtime/page';
 import MonthlyVehicleCostPage from '@/app/settlement/monthly-vehicle-cost/page';
+import UserManagementPage from '@/app/settings/users/page';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -84,6 +86,13 @@ const menuItems = [
     enName: 'Monthly Fixed Cost',
     component: <MonthlyVehicleCostPage />,
     icon: PaymentIcon
+  },
+  {
+    id: 'user-management',
+    name: '사용자 관리',
+    enName: 'User Management',
+    component: <UserManagementPage />,
+    icon: Users
   },
 ];
 

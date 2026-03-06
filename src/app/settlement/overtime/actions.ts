@@ -21,6 +21,30 @@ export interface OvertimeSummary {
   details: OvertimeItem[];
 }
 
+export async function saveHolidays(dates: string[]) {
+  try {
+    await prisma.nDY_Config.upsert({
+      where: { key: 'holidays' },
+      update: { data: { dates }, updatedAt: new Date() },
+      create: { key: 'holidays', data: { dates }, updatedAt: new Date() }
+    });
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getHolidays() {
+  try {
+    const config = await prisma.nDY_Config.findUnique({
+      where: { key: 'holidays' }
+    });
+    return { success: true, dates: (config?.data as any)?.dates || [] };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
 export async function getOvertimeData(startDate: string, endDate: string) {
   let connection;
   try {
@@ -28,19 +52,26 @@ export async function getOvertimeData(startDate: string, endDate: string) {
 
     // 1. Calculate Standard Hourly Rate from AdditionalCost (Prisma)
     const year = startDate.split('-')[0];
-    
-    // Find a driver with 4 working hours (e.g., 'Park Geun-nan' logic)
-    const sourceDriver = await prisma.additionalCost.findFirst({
-        where: {
-            year: year,
-            workingHours: 4
-        }
+
+    // 1. Get Standard Hourly Rate from NDY_Config (优先)
+    const pickingRateConfig = await prisma.nDY_Config.findUnique({
+      where: { key: 'picking_hourly_rate' }
     });
 
-    let standardHourlyRate = 0;
-    if (sourceDriver && sourceDriver.baseRate > 0) {
-        // Calculation: monthly baseRate / (26 days * 4 hours)
+    let standardHourlyRate = (pickingRateConfig?.data as any)?.rate || 0;
+
+    if (standardHourlyRate === 0) {
+      // Fallback to calculate from AdditionalCost if not set
+      const sourceDriver = await prisma.additionalCost.findFirst({
+        where: {
+          year: year,
+          workingHours: 4
+        }
+      });
+
+      if (sourceDriver && sourceDriver.baseRate > 0) {
         standardHourlyRate = Math.floor(sourceDriver.baseRate / (26 * 4));
+      }
     }
 
     // 2. Fetch t_il_kun records (MySQL)
@@ -66,7 +97,7 @@ export async function getOvertimeData(startDate: string, endDate: string) {
       if (!div.includes('기사파트')) {
         return;
       }
-      
+
       let hours = 0;
       let mins = 0;
       const hourMatch = gubun.match(/(\d+)시간/);
@@ -74,7 +105,7 @@ export async function getOvertimeData(startDate: string, endDate: string) {
       const minMatch = gubun.match(/(\d+)분/);
       if (minMatch) mins = parseInt(minMatch[1], 10);
       const duration = hours + (mins / 60);
-      
+
       items.push({
         id: row.IK_IDX,
         date: row.IK_DATE instanceof Date ? formatDate(row.IK_DATE) : row.IK_DATE,
@@ -85,10 +116,17 @@ export async function getOvertimeData(startDate: string, endDate: string) {
       });
     });
 
-    return { 
-        success: true, 
-        data: items,
-        standardHourlyRate 
+    // 3. Get Holidays for multiplier
+    const holidayConfig = await prisma.nDY_Config.findUnique({
+      where: { key: 'holidays' }
+    });
+    const holidays = (holidayConfig?.data as any)?.dates || [];
+
+    return {
+      success: true,
+      data: items,
+      standardHourlyRate,
+      holidays
     };
 
   } catch (error: any) {

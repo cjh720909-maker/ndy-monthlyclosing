@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useTabs } from '@/context/TabContext';
-import { 
+import {
   CreditCard,
   PenTool,
   Truck,
@@ -29,61 +29,61 @@ interface SidebarProps {
 }
 
 const menuItems = [
-  { 
+  {
     id: 'monthly-closing',
-    name: '월말 마감', 
-    enName: 'Monthly Closing', 
+    name: '월말 마감',
+    enName: 'Monthly Closing',
     component: <MonthlyClosingDashboard />,
-    icon: CreditCard 
+    icon: CreditCard
   },
-  { 
+  {
     id: 'picking',
-    name: '피킹 파트 정산', 
-    enName: 'Picking Settlement', 
+    name: '피킹 파트 정산',
+    enName: 'Picking Settlement',
     component: <PickingSettlementPage />,
-    icon: CreditCard 
+    icon: CreditCard
   },
-  { 
+  {
     id: 'additional-cost',
-    name: '추가 비용 등록', 
-    enName: 'Additional Cost', 
+    name: '추가 비용 등록',
+    enName: 'Additional Cost',
     component: <AdditionalCostPage />,
-    icon: PenTool 
+    icon: PenTool
   },
-  { 
+  {
     id: 'long-distance',
-    name: '장거리 및 기타 추가 등록', 
-    enName: 'Long-distance Truck', 
+    name: '장거리 및 기타 추가 등록',
+    enName: 'Long-distance Truck',
     component: <LongDistanceVehiclePage />,
-    icon: Truck 
+    icon: Truck
   },
-  { 
+  {
     id: 'absence',
-    name: '차량 결근 조회', 
-    enName: 'Vehicle Absence', 
+    name: '차량 결근 조회',
+    enName: 'Vehicle Absence',
     component: <VehicleAbsencePage />,
-    icon: CalendarX 
+    icon: CalendarX
   },
-  { 
+  {
     id: 'turn2',
-    name: '이회전 차량 조회', 
-    enName: '2nd Turn Vehicle', 
+    name: '이회전 차량 조회',
+    enName: '2nd Turn Vehicle',
     component: <Turn2VehiclePage />,
-    icon: Truck 
+    icon: Truck
   },
-  { 
+  {
     id: 'overtime-inquiry',
-    name: '연장 시간 조회', 
-    enName: 'Overtime Inquiry', 
+    name: '연장 시간 조회',
+    enName: 'Overtime Inquiry',
     component: <OvertimePage />,
-    icon: CalendarX 
+    icon: CalendarX
   },
-  { 
+  {
     id: 'monthly-vehicle-cost',
-    name: '고정차량 월 지급액', 
-    enName: 'Monthly Fixed Cost', 
+    name: '고정차량 월 지급액',
+    enName: 'Monthly Fixed Cost',
     component: <MonthlyVehicleCostPage />,
-    icon: PaymentIcon 
+    icon: PaymentIcon
   },
 ];
 
@@ -94,7 +94,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     <>
       {/* Mobile Overlay */}
       {isOpen && (
-        <div 
+        <div
           className="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm lg:hidden"
           onClick={onClose}
         />
@@ -112,7 +112,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               <span className="text-indigo-950 font-bold text-xl">N</span>
             </div>
             <div>
-              <h1 className="text-lg font-bold leading-tight tracking-tight">NDY Closing</h1>
+              <h1 className="text-lg font-bold leading-tight tracking-tight">NDY 차량 월마감</h1>
               <p className="text-[10px] text-indigo-300 font-bold uppercase tracking-wider">Monthly Solutions</p>
             </div>
           </div>
@@ -133,8 +133,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 onClick={() => openTab(item.id, item.name, item.component)}
                 className={`
                   w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 group text-left
-                  ${isActive 
-                    ? 'bg-indigo-800 shadow-[0_4px_12px_rgba(0,0,0,0.1)] text-white' 
+                  ${isActive
+                    ? 'bg-indigo-800 shadow-[0_4px_12px_rgba(0,0,0,0.1)] text-white'
                     : 'text-indigo-200 hover:bg-white/5 hover:text-white'}
                 `}
               >
@@ -155,24 +155,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
         {/* Footer Info / Status Board */}
         <div className="absolute bottom-6 left-6 right-6">
-          <div className="p-4 bg-indigo-950/40 rounded-2xl border border-indigo-800/50 backdrop-blur-sm">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-[10px] text-indigo-400 font-bold uppercase tracking-widest">System Status</p>
-              <div className="flex items-center gap-1.5">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-[11px] font-bold text-emerald-400">Live</span>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="text-indigo-300">Region</span>
-                <span className="text-indigo-100 font-medium font-sans">KR-SEL</span>
-              </div>
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="text-indigo-300">Environment</span>
-                <span className="text-indigo-100 font-medium font-sans">Prod-V3</span>
-              </div>
-            </div>
+          <div className="p-4 bg-indigo-950/40 rounded-2xl border border-indigo-800/50 backdrop-blur-sm flex items-center justify-center">
+            <span className="text-sm font-bold text-indigo-100 tracking-widest">NDY</span>
           </div>
         </div>
       </aside>

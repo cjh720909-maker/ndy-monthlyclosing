@@ -3,7 +3,7 @@ import "./globals.css";
 import { AppShell } from "@/components/AppShell";
 
 export const metadata: Metadata = {
-  title: "NDY Monthly Closing - 월마감 시스템",
+  title: "NDY 차량 월마감",
   description: "월별 물류 정산 및 마감 관리 시스템",
 };
 

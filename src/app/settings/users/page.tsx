@@ -11,7 +11,7 @@ import {
     AlertCircle,
     Loader2
 } from 'lucide-react';
-import { syncUsers, getUsers } from '@/app/actions/user-actions';
+import { syncUsers, getUsers, updateUserPermissions } from '@/app/actions/user-actions';
 
 export default function UserManagementPage() {
     const [users, setUsers] = useState<any[]>([]);
@@ -33,6 +33,18 @@ export default function UserManagementPage() {
         setLoading(false);
     };
 
+    const handlePermissionToggle = async (userId: number, field: string, currentValue: boolean) => {
+        // Optimistic update
+        setUsers(prev => prev.map(u => u.id === userId ? { ...u, [field]: !currentValue } : u));
+
+        const result = await updateUserPermissions(userId, { [field]: !currentValue });
+        if (!result.success) {
+            setMessage({ type: 'error', text: `권한 업데이트 실패: ${result.error}` });
+            // Rollback
+            setUsers(prev => prev.map(u => u.id === userId ? { ...u, [field]: currentValue } : u));
+        }
+    };
+
     const handleSync = async () => {
         if (!confirm('레거시 MySQL 시스템에서 사용자 정보를 가져오시겠습니까?\n기존에 동일한 아이디가 있는 경우 최신 정보로 업데이트됩니다.')) return;
 
@@ -50,7 +62,7 @@ export default function UserManagementPage() {
 
     const filteredUsers = users.filter(user =>
         user.username.toLowerCase().includes(search.toLowerCase()) ||
-        (user.name && user.name.toLowerCase().includes(search.toLowerCase()))
+        (user.fullName && user.fullName.toLowerCase().includes(search.toLowerCase()))
     );
 
     return (
@@ -71,8 +83,8 @@ export default function UserManagementPage() {
                     onClick={handleSync}
                     disabled={syncing}
                     className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all shadow-lg active:scale-95 ${syncing
-                            ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                            : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-200'
+                        ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                        : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-200'
                         }`}
                 >
                     {syncing ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
@@ -121,14 +133,17 @@ export default function UserManagementPage() {
                             <tr>
                                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">사용자 정보</th>
                                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">아이디</th>
-                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">권한</th>
+                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">관리 권한</th>
+                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest text-center">접근</th>
+                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest text-center">조회</th>
+                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest text-center">쓰기</th>
                                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest text-right">등록일</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {loading ? (
                                 <tr>
-                                    <td colSpan={4} className="py-20 text-center">
+                                    <td colSpan={7} className="py-20 text-center">
                                         <Loader2 size={32} className="animate-spin text-indigo-400 mx-auto mb-4" />
                                         <p className="text-slate-400 text-sm font-medium">사용자 목록을 불러오는 중입니다...</p>
                                     </td>
@@ -139,10 +154,10 @@ export default function UserManagementPage() {
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center font-bold text-sm">
-                                                    {user.name ? user.name.substring(0, 1) : <UserIcon size={18} />}
+                                                    {user.fullName ? user.fullName.substring(0, 1) : <UserIcon size={18} />}
                                                 </div>
                                                 <div>
-                                                    <div className="font-bold text-slate-800">{user.name || '미지정'}</div>
+                                                    <div className="font-bold text-slate-800">{user.fullName || '미지정'}</div>
                                                     <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">Active Member</div>
                                                 </div>
                                             </div>
@@ -159,6 +174,30 @@ export default function UserManagementPage() {
                                                 {user.role}
                                             </span>
                                         </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <button
+                                                onClick={() => handlePermissionToggle(user.id, 'canAccess', user.canAccess ?? true)}
+                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${user.canAccess ?? true ? 'bg-indigo-600' : 'bg-slate-200'}`}
+                                            >
+                                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${user.canAccess ?? true ? 'translate-x-6' : 'translate-x-1'}`} />
+                                            </button>
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <button
+                                                onClick={() => handlePermissionToggle(user.id, 'canRead', user.canRead ?? true)}
+                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${user.canRead ?? true ? 'bg-emerald-500' : 'bg-slate-200'}`}
+                                            >
+                                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${user.canRead ?? true ? 'translate-x-6' : 'translate-x-1'}`} />
+                                            </button>
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <button
+                                                onClick={() => handlePermissionToggle(user.id, 'canWrite', user.canWrite ?? true)}
+                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${user.canWrite ?? true ? 'bg-amber-500' : 'bg-slate-200'}`}
+                                            >
+                                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${user.canWrite ?? true ? 'translate-x-6' : 'translate-x-1'}`} />
+                                            </button>
+                                        </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="text-xs text-slate-400 font-mono">
                                                 {new Date(user.createdAt).toLocaleDateString('ko-KR', {
@@ -172,7 +211,7 @@ export default function UserManagementPage() {
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan={4} className="py-20 text-center">
+                                    <td colSpan={7} className="py-20 text-center">
                                         <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-slate-300">
                                             <Users size={32} />
                                         </div>

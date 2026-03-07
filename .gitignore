@@ -8,3 +8,13 @@ node_modules
 prisma/*.db
 prisma/*.db-journal
 *.log
+
+# Data and Scripts
+data/
+*.js
+!package.json
+!next.config.js
+!postcss.config.js
+!tailwind.config.js
+!src/**/*.js
+

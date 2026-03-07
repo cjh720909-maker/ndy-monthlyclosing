@@ -34,13 +34,16 @@ export async function syncUsers() {
                 where: { username },
                 update: {
                     password,
-                    name,
+                    fullName: name,
                 },
                 create: {
                     username,
                     password,
-                    name,
+                    fullName: name,
                     role: 'USER',
+                    canAccess: true,
+                    canRead: true,
+                    canWrite: true,
                 },
             });
             syncCount++;
@@ -62,6 +65,19 @@ export async function getUsers() {
         });
         return { success: true, data: users };
     } catch (error: any) {
+        return { success: false, error: error.message };
+    }
+}
+
+export async function updateUserPermissions(userId: number, permissions: { canAccess?: boolean, canRead?: boolean, canWrite?: boolean }) {
+    try {
+        const updatedUser = await prisma.user.update({
+            where: { id: userId },
+            data: permissions
+        });
+        return { success: true, data: updatedUser };
+    } catch (error: any) {
+        console.error('Failed to update user permissions:', error);
         return { success: false, error: error.message };
     }
 }

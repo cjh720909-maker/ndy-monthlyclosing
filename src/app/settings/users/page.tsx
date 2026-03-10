@@ -11,14 +11,18 @@ import {
     AlertCircle,
     Loader2
 } from 'lucide-react';
-import { syncUsers, getUsers, updateUserPermissions } from '@/app/actions/user-actions';
+import { createUser, getUsers, updateUserPermissions, changePassword } from '@/app/actions/user-actions';
 
 export default function UserManagementPage() {
     const [users, setUsers] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
-    const [syncing, setSyncing] = useState(false);
     const [search, setSearch] = useState('');
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
+    // New User Form State
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [newUser, setNewUser] = useState({ username: '', password: '', fullName: '' });
+    const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
         fetchUsers();
@@ -45,19 +49,24 @@ export default function UserManagementPage() {
         }
     };
 
-    const handleSync = async () => {
-        if (!confirm('레거시 MySQL 시스템에서 사용자 정보를 가져오시겠습니까?\n기존에 동일한 아이디가 있는 경우 최신 정보로 업데이트됩니다.')) return;
+    const handleAddUser = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newUser.username || !newUser.password || !newUser.fullName) {
+            setMessage({ type: 'error', text: '모든 정보를 입력해주세요.' });
+            return;
+        }
 
-        setSyncing(true);
-        setMessage(null);
-        const result = await syncUsers();
+        setSubmitting(true);
+        const result = await createUser(newUser);
         if (result.success) {
-            setMessage({ type: 'success', text: `${result.count}명의 사용자가 성공적으로 동기화되었습니다.` });
+            setMessage({ type: 'success', text: '사용자가 생성되었습니다.' });
+            setShowAddModal(false);
+            setNewUser({ username: '', password: '', fullName: '' });
             await fetchUsers();
         } else {
-            setMessage({ type: 'error', text: `동기화 실패: ${result.error}` });
+            setMessage({ type: 'error', text: `실패: ${result.error}` });
         }
-        setSyncing(false);
+        setSubmitting(false);
     };
 
     const filteredUsers = users.filter(user =>
@@ -76,19 +85,15 @@ export default function UserManagementPage() {
                         </div>
                         사용자 관리
                     </h2>
-                    <p className="text-slate-500 mt-1 text-sm font-medium">시스템 접속 계정 및 레거시 데이터 동기화 관리</p>
+                    <p className="text-slate-500 mt-1 text-sm font-medium">직접 계정 생성 및 권한 관리</p>
                 </div>
 
                 <button
-                    onClick={handleSync}
-                    disabled={syncing}
-                    className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all shadow-lg active:scale-95 ${syncing
-                        ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                        : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-200'
-                        }`}
+                    onClick={() => setShowAddModal(true)}
+                    className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all shadow-lg active:scale-95 bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-200"
                 >
-                    {syncing ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
-                    레거시 계정 동기화
+                    <Users size={16} />
+                    신규 사용자 추가
                 </button>
             </div>
 
@@ -216,7 +221,7 @@ export default function UserManagementPage() {
                                             <Users size={32} />
                                         </div>
                                         <h3 className="text-slate-600 font-bold italic">사용자가 없습니다.</h3>
-                                        <p className="text-slate-400 text-xs mt-1">상단의 동기화 버튼을 클릭하여 레거시 계정을 가져올 수 있습니다.</p>
+                                        <p className="text-slate-400 text-xs mt-1">상단의 추가 버튼을 클릭하여 사용자를 등록해 주세요.</p>
                                     </td>
                                 </tr>
                             )}
@@ -224,6 +229,72 @@ export default function UserManagementPage() {
                     </table>
                 </div>
             </div>
+
+            {/* Add User Modal */}
+            {showAddModal && (
+                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+                            <h3 className="text-xl font-bold text-slate-800">신규 사용자 추가</h3>
+                            <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-slate-600">
+                                <RefreshCw size={20} className="rotate-45" />
+                            </button>
+                        </div>
+                        <form onSubmit={handleAddUser} className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">아이디</label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={newUser.username}
+                                    onChange={e => setNewUser({ ...newUser, username: e.target.value })}
+                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all"
+                                    placeholder="사용자 아이디"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">초기 비밀번호</label>
+                                <input
+                                    type="password"
+                                    required
+                                    value={newUser.password}
+                                    onChange={e => setNewUser({ ...newUser, password: e.target.value })}
+                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all"
+                                    placeholder="비밀번호"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">사용자 성함</label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={newUser.fullName}
+                                    onChange={e => setNewUser({ ...newUser, fullName: e.target.value })}
+                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all"
+                                    placeholder="성함"
+                                />
+                            </div>
+                            <div className="pt-4 flex gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAddModal(false)}
+                                    className="flex-1 px-6 py-3 rounded-xl text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
+                                >
+                                    취소
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={submitting}
+                                    className="flex-1 px-6 py-3 rounded-xl text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all active:scale-95 disabled:opacity-50"
+                                >
+                                    {submitting ? '생성 중...' : '사용자 생성'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
+

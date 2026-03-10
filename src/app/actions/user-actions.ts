@@ -5,56 +5,54 @@ import pool from '@/lib/db';
 import { RowDataPacket } from 'mysql2';
 import iconv from 'iconv-lite';
 
-export async function syncUsers() {
-    let connection;
+export async function createUser(data: { username: string, password: string, fullName: string }) {
     try {
-        connection = await pool.getConnection();
+        // 1. Check if user already exists
+        const existingUser = await prisma.user.findFirst({
+            where: { username: data.username }
+        });
 
-        // 1. Fetch users from MySQL (t_employ)
-        const [rows] = await connection.execute<RowDataPacket[]>(`
-      SELECT 
-        E_SABUN, 
-        E_PASS, 
-        CAST(E_NAME AS BINARY) as E_NAME_BIN
-      FROM t_employ 
-      WHERE E_DEL = 'N'
-    `);
-
-        let syncCount = 0;
-
-        // 2. Sync to PostgreSQL (NMC_User)
-        for (const row of rows) {
-            const username = row.E_SABUN;
-            const password = row.E_PASS;
-            const name = iconv.decode(row.E_NAME_BIN as Buffer, 'euckr');
-
-            if (!username || !password) continue;
-
-            await prisma.user.upsert({
-                where: { username },
-                update: {
-                    password,
-                    fullName: name,
-                },
-                create: {
-                    username,
-                    password,
-                    fullName: name,
-                    role: 'USER',
-                    canAccess: true,
-                    canRead: true,
-                    canWrite: true,
-                },
-            });
-            syncCount++;
+        if (existingUser) {
+            return { success: false, error: '이미 존재하는 아이디입니다.' };
         }
 
-        return { success: true, count: syncCount };
+        // 2. Get max ID for manual increment (DB issue mitigation)
+        const maxIdUser = await prisma.user.findFirst({
+            orderBy: { id: 'desc' },
+        });
+        const nextId = (maxIdUser?.id || 0) + 1;
+
+        // 3. Create user
+        const newUser = await prisma.user.create({
+            data: {
+                id: nextId,
+                username: data.username,
+                password: data.password,
+                fullName: data.fullName,
+                role: 'USER',
+                canAccess: true,
+                canRead: true,
+                canWrite: true,
+            },
+        });
+
+        return { success: true, data: newUser };
     } catch (error: any) {
-        console.error('Failed to sync users:', error);
+        console.error('Failed to create user:', error);
         return { success: false, error: error.message };
-    } finally {
-        if (connection) connection.release();
+    }
+}
+
+export async function changePassword(userId: number, newPassword: string) {
+    try {
+        await prisma.user.update({
+            where: { id: userId },
+            data: { password: newPassword }
+        });
+        return { success: true };
+    } catch (error: any) {
+        console.error('Failed to change password:', error);
+        return { success: false, error: error.message };
     }
 }
 

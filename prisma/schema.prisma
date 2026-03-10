@@ -94,6 +94,8 @@ model NDY_BillingItem {
   createdAt        DateTime          @default(now())
   updatedAt        DateTime
   NDY_BillingRate  NDY_BillingRate[]
+
+  @@map("NMC_BillingItem")
 }
 
 model NDY_BillingRate {
@@ -105,12 +107,16 @@ model NDY_BillingRate {
   note            String          @default("")
   createdAt       DateTime        @default(now())
   NDY_BillingItem NDY_BillingItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@map("NMC_BillingRate")
 }
 
 model NDY_Config {
   key       String   @id
   data      Json
   updatedAt DateTime
+
+  @@map("NMC_Config")
 }
 
 model NDY_DailySummary {
@@ -122,6 +128,7 @@ model NDY_DailySummary {
   NDY_DailySummaryItem NDY_DailySummaryItem[]
 
   @@unique([startDate, endDate])
+  @@map("NMC_DailySummary")
 }
 
 model NDY_DailySummaryItem {
@@ -132,6 +139,8 @@ model NDY_DailySummaryItem {
   totalAmount      Int              @default(0)
   deliveryDates    String[]
   NDY_DailySummary NDY_DailySummary @relation(fields: [summaryId], references: [id], onDelete: Cascade)
+
+  @@map("NMC_DailySummaryItem")
 }
 
 model NDY_EmergencyRate {
@@ -139,6 +148,8 @@ model NDY_EmergencyRate {
   rate      Int      @default(0)
   chung     String   @default("")
   updatedAt DateTime
+
+  @@map("NMC_EmergencyRate")
 }
 
 model NDY_EmergencySettlement {
@@ -154,6 +165,7 @@ model NDY_EmergencySettlement {
   createdAt DateTime @default(now())
 
   @@unique([startDate, endDate, name])
+  @@map("NMC_EmergencySettlement")
 }
 
 model NDY_FixedSettlement {
@@ -165,6 +177,8 @@ model NDY_FixedSettlement {
   rate             Int      @default(0)
   note             String?
   createdAt        DateTime @default(now())
+
+  @@map("NMC_FixedSettlement")
 }
 
 model NDY_GSSettlement {
@@ -179,6 +193,7 @@ model NDY_GSSettlement {
   modDate DateTime @default(now())
 
   @@unique([date, code])
+  @@map("NMC_GSSettlement")
 }
 
 model NDY_GSSummary {
@@ -195,6 +210,7 @@ model NDY_GSSummary {
   updatedAt   DateTime
 
   @@unique([startDate, endDate])
+  @@map("NMC_GSSummary")
 }
 
 model NDY_InquirySettlement {
@@ -214,6 +230,7 @@ model NDY_InquirySettlement {
   createdAt DateTime @default(now())
 
   @@unique([startDate, endDate, date, name, so, nap, kum])
+  @@map("NMC_InquirySettlement")
 }
 
 model NDY_MonthlyClosing {
@@ -224,6 +241,7 @@ model NDY_MonthlyClosing {
   closedAt  DateTime @default(now())
 
   @@unique([startDate, endDate])
+  @@map("NMC_MonthlyClosing")
 }
 
 model NMC_Turn2RateHistory {
@@ -246,114 +264,4 @@ model NMC_Turn2Vehicle {
   createdAt            DateTime               @default(now())
   updatedAt            DateTime
   NMC_Turn2RateHistory NMC_Turn2RateHistory[]
-}
-
-model NTF_Affiliation {
-  id                  Int                   @id @default(autoincrement())
-  name                String                @unique
-  bizNo               String?
-  ceo                 String?
-  address             String?
-  manager             String?
-  contact             String?
-  email               String?
-  memo                String?
-  createdAt           DateTime              @default(now())
-  oldId               String?
-  NTF_Driver          NTF_Driver[]
-  NTF_User            NTF_User[]
-  NTF_YongchaContract NTF_YongchaContract[]
-}
-
-model NTF_Driver {
-  id              Int              @id @default(autoincrement())
-  name            String
-  affiliationId   Int?
-  carNo           String?
-  tonnage         String?
-  phone           String?
-  regDate         DateTime?
-  address         String?
-  memo            String?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime
-  oldId           String?
-  NTF_Affiliation NTF_Affiliation? @relation(fields: [affiliationId], references: [id])
-
-  @@index([name])
-}
-
-model NTF_SettlementHistory {
-  id                  Int                  @id @default(autoincrement())
-  date                DateTime             @db.Date
-  driverName          String
-  affiliation         String?
-  tonnage             String?
-  destCount           Int
-  totalWeight         Int
-  fee                 Int
-  memo                String?
-  status              String               @default("COMPLETED")
-  isPbox              Boolean              @default(false)
-  isReturn            Boolean              @default(false)
-  so                  String?
-  nap                 String?
-  ton                 Int?
-  contractId          Int?
-  appliedTonnage      String?
-  createdAt           DateTime             @default(now())
-  oldId               String?
-  originalFee         Int                  @default(0)
-  NTF_YongchaContract NTF_YongchaContract? @relation(fields: [contractId], references: [id])
-
-  @@index([date, driverName], map: "IDX_SETTLEMENT_DATE_NAME")
-}
-
-model NTF_User {
-  id              Int              @id @default(autoincrement())
-  loginId         String           @unique
-  password        String
-  name            String
-  role            String           @default("TRANSPORT")
-  affiliationId   Int?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime
-  oldId           String?
-  NTF_Affiliation NTF_Affiliation? @relation(fields: [affiliationId], references: [id])
-
-  @@index([loginId])
-}
-
-model NTF_YongchaContract {
-  id                    Int                     @id @default(autoincrement())
-  year                  Int
-  affiliationId         Int
-  startDate             DateTime
-  endDate               DateTime
-  status                String                  @default("ACTIVE")
-  createdAt             DateTime                @default(now())
-  updatedAt             DateTime
-  memo                  String?
-  oldId                 String?
-  NTF_SettlementHistory NTF_SettlementHistory[]
-  NTF_Affiliation       NTF_Affiliation         @relation(fields: [affiliationId], references: [id])
-  NTF_YongchaRateDetail NTF_YongchaRateDetail[]
-
-  @@index([affiliationId, year])
-  @@index([startDate, endDate])
-}
-
-model NTF_YongchaRateDetail {
-  id                  Int                 @id @default(autoincrement())
-  contractId          Int
-  tonnage             String?
-  region              String
-  price               Int
-  memo                String?
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime
-  oldId               String?
-  NTF_YongchaContract NTF_YongchaContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
-
-  @@index([contractId, region, tonnage])
 }

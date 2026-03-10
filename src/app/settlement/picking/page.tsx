@@ -52,7 +52,12 @@ export default function PickingSettlementPage() {
       if (res.success) {
         setBatchHourlyRate(rate);
         setIsModalOpen(false);
+        alert('연장 시급이 성공적으로 저장되었습니다.');
+      } else {
+        alert('저장에 실패했습니다: ' + res.error);
       }
+    } else {
+      alert('올바른 금액을 입력해주세요.');
     }
   };
 
@@ -60,12 +65,23 @@ export default function PickingSettlementPage() {
     if (batchHourlyRate !== null) {
       const addition = Math.round(item.overtimeHours * batchHourlyRate);
       const totalAmount = item.baseRate + item.allowance - item.deduction + addition;
-      return { ...item, addition, totalAmount, customHourlyRate: batchHourlyRate };
+      return {
+        ...item,
+        addition,
+        totalAmount,
+        customHourlyRate: batchHourlyRate
+      };
     }
     return item;
   });
 
   const totalAmount = processedData.reduce((sum, item) => sum + item.totalAmount, 0);
+
+  // Calculate reference hourly rate based on '김선명' (Specific user request: /26/3)
+  const targetDriver = data.find(item => item.name === '김선명');
+  const refHourlyRate = targetDriver
+    ? Math.round((targetDriver.baseRate + targetDriver.allowance) / 26 / 3)
+    : 0;
 
   return (
     <div className="max-w-7xl mx-auto h-full flex flex-col">
@@ -103,13 +119,22 @@ export default function PickingSettlementPage() {
             조회
           </button>
 
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-amber-500 text-white rounded-lg text-sm font-bold hover:bg-amber-600 transition-colors shadow-lg shadow-amber-200"
-          >
-            <PenTool size={14} />
-            연장 시급 설정 {batchHourlyRate && `(₩${batchHourlyRate.toLocaleString()})`}
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-amber-500 text-white rounded-lg text-sm font-bold hover:bg-amber-600 transition-colors shadow-lg shadow-amber-200"
+            >
+              <PenTool size={14} />
+              연장 시급 설정 {batchHourlyRate && `(₩${batchHourlyRate.toLocaleString()})`}
+            </button>
+
+            {refHourlyRate > 0 && (
+              <div className="text-[11px] text-slate-400 font-medium bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
+                <span className="opacity-70">자동 계산 참조(김선명 기사 기준):</span>
+                <span className="ml-1 text-slate-500 font-bold">₩ {refHourlyRate.toLocaleString()}</span>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center gap-2">

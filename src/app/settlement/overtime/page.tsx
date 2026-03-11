@@ -124,8 +124,17 @@ export default function OvertimePage() {
 
     const res = await saveHolidays(dates);
     if (res.success) {
-      setHolidays(dates);
-      setIsHolidayModalOpen(false);
+      setHolidays(res.dates || []);
+      setIsHolidayModalOpen(true); // Keep open to show results
+      handleSearch();
+    }
+  };
+
+  const handleDeleteHoliday = async (dateToDelete: string) => {
+    const newDates = holidays.filter(d => d !== dateToDelete);
+    const res = await saveHolidays(newDates, true); // Use overwrite mode for deletion
+    if (res.success) {
+      setHolidays(newDates);
       handleSearch();
     }
   };
@@ -375,20 +384,40 @@ export default function OvertimePage() {
                 </div>
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex gap-3 mb-8">
                 <button
                   onClick={() => setIsHolidayModalOpen(false)}
                   className="flex-1 px-6 py-3.5 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors"
                 >
-                  취소
+                  닫기
                 </button>
                 <button
                   onClick={handleSaveHolidays}
                   className="flex-1 px-6 py-3.5 bg-amber-600 text-white rounded-xl font-bold hover:bg-amber-700 transition-all shadow-lg shadow-amber-200"
                 >
-                  등록하기
+                  기간 추가
                 </button>
               </div>
+
+              {/* Registered Holidays List */}
+              {holidays.length > 0 && (
+                <div className="border-t border-slate-100 pt-6">
+                  <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 block">등록된 명절 목록 ({holidays.length}일)</label>
+                  <div className="max-h-40 overflow-y-auto pr-2 space-y-2 custom-scrollbar">
+                    {holidays.sort().map((date) => (
+                      <div key={date} className="flex items-center justify-between bg-amber-50 px-3 py-2 rounded-lg border border-amber-100 group">
+                        <span className="text-sm font-bold text-amber-700 font-mono">{date}</span>
+                        <button
+                          onClick={() => handleDeleteHoliday(date)}
+                          className="p-1 hover:bg-amber-200 rounded-md text-amber-400 hover:text-amber-600 transition-colors"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

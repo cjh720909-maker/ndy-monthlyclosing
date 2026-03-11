@@ -21,14 +21,25 @@ export interface OvertimeSummary {
   details: OvertimeItem[];
 }
 
-export async function saveHolidays(dates: string[]) {
+export async function saveHolidays(dates: string[], overwrite = false) {
   try {
+    let finalDates = dates;
+
+    if (!overwrite) {
+      const currentConfig = await prisma.nDY_Config.findUnique({
+        where: { key: 'holidays' }
+      });
+      const existingDates = (currentConfig?.data as any)?.dates || [];
+      // Combine and remove duplicates
+      finalDates = Array.from(new Set([...existingDates, ...dates])).sort();
+    }
+
     await prisma.nDY_Config.upsert({
       where: { key: 'holidays' },
-      update: { data: { dates }, updatedAt: new Date() },
-      create: { key: 'holidays', data: { dates }, updatedAt: new Date() }
+      update: { data: { dates: finalDates }, updatedAt: new Date() },
+      create: { key: 'holidays', data: { dates: finalDates }, updatedAt: new Date() }
     });
-    return { success: true };
+    return { success: true, dates: finalDates };
   } catch (error: any) {
     return { success: false, error: error.message };
   }

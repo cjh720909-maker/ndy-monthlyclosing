@@ -5,6 +5,8 @@ import { RowDataPacket } from 'mysql2';
 import iconv from 'iconv-lite';
 import { formatDate } from '@/lib/utils';
 
+import prisma from '@/lib/prisma';
+
 export interface AbsenceRecord {
   date: string;
   dayOfWeek: string;
@@ -12,6 +14,8 @@ export interface AbsenceRecord {
   vehicleNumber: string;
   phone: string;
   dockNumber: string;
+  isTreated?: boolean;
+  remarks?: string;
 }
 
 export async function getAbsenceData(startDate: string, endDate: string) {
@@ -20,7 +24,6 @@ export async function getAbsenceData(startDate: string, endDate: string) {
     connection = await pool.getConnection();
 
     // 1. Fetch Drivers (Filter by Dock Number 01~40)
-    // Cast to BINARY to preserve EUC-KR bytes from MySQL
     const [drivers] = await connection.execute<RowDataPacket[]>(`
       SELECT 
         CAST(CB_DRIVER AS BINARY) as CB_DRIVER_BIN, 
@@ -40,18 +43,16 @@ export async function getAbsenceData(startDate: string, endDate: string) {
       const num = parseInt(dockStr.split('-')[0], 10);
       return !isNaN(num) && num >= 1 && num <= 40;
     }).map((d: any) => {
-      // Decode binary fields to EUC-KR
       const driverName = iconv.decode(d.CB_DRIVER_BIN as Buffer, 'euckr');
-      const carName = iconv.decode(d.CA_NAME_BIN as Buffer, 'euckr'); // Decode CA_NAME
+      const carName = iconv.decode(d.CA_NAME_BIN as Buffer, 'euckr');
       return {
         ...d,
         CB_DRIVER: driverName,
-        CA_NAME: carName, // Add decoded CA_NAME
+        CA_NAME: carName,
       };
     });
 
-    // 2. Fetch Dispatches from t_balju (Cast to BINARY)
-    // User Guide: "Search using CB_DRIVER in t_balju... if match found, that CA_NAME is present."
+    // 2. Fetch Dispatches from t_balju
     const [dispatches] = await connection.execute<RowDataPacket[]>(`
       SELECT B_DATE, CAST(CB_DRIVER AS BINARY) as CB_DRIVER_BIN
       FROM t_balju 
@@ -59,20 +60,15 @@ export async function getAbsenceData(startDate: string, endDate: string) {
     `, [startDate, endDate]);
 
     // 3. Process Absence
-    const absenceList: AbsenceRecord[] = [];
-    const dispatchMap = new Map<string, Set<string>>(); // Date -> Set of Cleaned Driver Names
-    const dailyDispatchCount = new Map<string, number>(); // Date -> Total Dispatches
+    const tempAbsenceList: AbsenceRecord[] = [];
+    const dispatchMap = new Map<string, Set<string>>();
+    const dailyDispatchCount = new Map<string, number>();
 
     dispatches.forEach((d: any) => {
       const dateStr = formatDate(new Date(d.B_DATE));
-
-      // Update daily count
       dailyDispatchCount.set(dateStr, (dailyDispatchCount.get(dateStr) || 0) + 1);
-
-      // Decode and clean dispatch driver name
       const rawDispatchDriver = iconv.decode(d.CB_DRIVER_BIN as Buffer, 'euckr');
       const cleanDispatchDriver = cleanName(rawDispatchDriver);
-
       if (!dispatchMap.has(dateStr)) {
         dispatchMap.set(dateStr, new Set());
       }
@@ -82,7 +78,6 @@ export async function getAbsenceData(startDate: string, endDate: string) {
     const start = new Date(startDate);
     const end = new Date(endDate);
 
-    // Group drivers by CA_NAME
     const driversByName: Record<string, typeof targetDrivers> = {};
     targetDrivers.forEach(d => {
       if (!driversByName[d.CA_NAME]) driversByName[d.CA_NAME] = [];
@@ -92,48 +87,26 @@ export async function getAbsenceData(startDate: string, endDate: string) {
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
       const day = d.getDay();
       const dateStr = formatDate(d);
-
-      // 1. Skip Sunday(0)
       if (day === 0) continue;
-
-      // 2. Intelligent Working Day Determination
-      // [최팀장님 지시] 전체 배차 건수가 2000건 미만이면 설 연휴 등 휴무로 간주합니다.
-      // 향후 이 숫자는 최팀장님 요청에 따라 조정 가능합니다. (평시 평균 약 5000건)
       const totalDispatches = dailyDispatchCount.get(dateStr) || 0;
       if (totalDispatches < 2000) continue;
 
       const dayOfWeekStr = getDayOfWeek(d);
       const activeDriversOnDate = dispatchMap.get(dateStr) || new Set<string>();
 
-      // Iterate uniq names
       for (const name of Object.keys(driversByName)) {
         const variants = driversByName[name];
         let isPresent = false;
-
         for (const v of variants) {
           const cleanDriver = cleanName(v.CB_DRIVER);
           const cleanCar = cleanName(v.CA_NAME);
-
-          // Match 1: Check by Driver Name (Exact or Included in dispatch)
-          if (activeDriversOnDate.has(cleanDriver)) {
+          if (activeDriversOnDate.has(cleanDriver) || (cleanCar && activeDriversOnDate.has(cleanCar))) {
             isPresent = true;
             break;
           }
-
-          // Match 2: Check by Car/Dispatch Name (Exact or Included in dispatch)
-          // Even if dispatch record doesn't have the driver name, 
-          // it often matches the CA_NAME in t_car.
-          if (cleanCar && activeDriversOnDate.has(cleanCar)) {
-            isPresent = true;
-            break;
-          }
-
-          // Match 3: Partial match for both (Only if name is specific enough)
           for (const activeDriver of activeDriversOnDate) {
-            // To avoid "김" matching "김영우", check length or specific pattern
             const isLongEnough = cleanDriver.length >= 2;
             const isCarLongEnough = cleanCar && cleanCar.length >= 2;
-
             if ((isLongEnough && activeDriver.includes(cleanDriver)) ||
               (isCarLongEnough && activeDriver.includes(cleanCar!))) {
               isPresent = true;
@@ -144,9 +117,8 @@ export async function getAbsenceData(startDate: string, endDate: string) {
         }
 
         if (!isPresent) {
-          // Pick a representative that has a vehicle number and phone if possible
           const representative = variants.find(v => v.CA_NO && v.CA_NO.trim() !== '') || variants[0];
-          absenceList.push({
+          tempAbsenceList.push({
             date: dateStr,
             dayOfWeek: dayOfWeekStr,
             driverName: name,
@@ -158,7 +130,30 @@ export async function getAbsenceData(startDate: string, endDate: string) {
       }
     }
 
-    return absenceList;
+    // 4. Merge with AbsenceTreatment from Prisma
+    const treatments = await prisma.nMC_AbsenceTreatment.findMany({
+      where: {
+        date: { gte: startDate, lte: endDate }
+      }
+    });
+
+    const treatmentMap = new Map<string, typeof treatments[0]>();
+    treatments.forEach((t: typeof treatments[0]) => {
+      const key = `${t.date}|${t.driverName}|${t.vehicleNumber}`;
+      treatmentMap.set(key, t);
+    });
+
+    const finalAbsenceList = tempAbsenceList.map(item => {
+      const key = `${item.date}|${item.driverName}|${item.vehicleNumber}`;
+      const t = treatmentMap.get(key);
+      return {
+        ...item,
+        isTreated: t?.isTreated ?? false,
+        remarks: t?.remarks ?? ''
+      };
+    });
+
+    return finalAbsenceList;
 
   } catch (error) {
     console.error('Database Error:', error);
@@ -173,20 +168,18 @@ export interface AbsenceSummary {
   vehicleNumber: string;
   phone: string;
   dockNumber: string;
-  dates: string[];     // ["2026-02-02", "2026-02-05"]
-  displayDates: string; // "2일, 5일"
+  dates: string[];
+  displayDates: string;
   totalCount: number;
+  treatedCount: number;
 }
 
 export async function getAbsenceSummary(startDate: string, endDate: string): Promise<AbsenceSummary[]> {
   const rawData = await getAbsenceData(startDate, endDate);
-
-  // Aggregate by Driver + Vehicle (Composite Key)
   const grouped = new Map<string, AbsenceSummary>();
 
   rawData.forEach(record => {
     const key = `${record.driverName}|${record.vehicleNumber}`;
-
     if (!grouped.has(key)) {
       grouped.set(key, {
         driverName: record.driverName,
@@ -195,32 +188,59 @@ export async function getAbsenceSummary(startDate: string, endDate: string): Pro
         dockNumber: record.dockNumber,
         dates: [],
         displayDates: '',
-        totalCount: 0
+        totalCount: 0,
+        treatedCount: 0
       });
     }
 
     const entry = grouped.get(key)!;
     entry.dates.push(record.date);
     entry.totalCount += 1;
+    if (record.isTreated) {
+      entry.treatedCount += 1;
+    }
   });
 
-  // Process display format and sorting
   return Array.from(grouped.values()).map(entry => {
-    // Sort dates just in case
     entry.dates.sort();
-
-    // Format: "2일, 5일, 12일"
-    // Assuming all dates are in the same month for simplicity as per user request context.
-    // If spanning months, we might want "2/2, 2/5". 
-    // For now, let's just use the Day part if typical usage is monthly.
-    // However, to be safe, I'll use "D일" format.
     entry.displayDates = entry.dates.map(d => {
       const day = parseInt(d.split('-')[2], 10);
       return `${day}일`;
     }).join(', ');
-
     return entry;
   }).sort((a, b) => a.driverName.localeCompare(b.driverName));
+}
+
+export async function saveAbsenceTreatments(data: { date: string, driverName: string, vehicleNumber: string, isTreated: boolean, remarks: string }[]) {
+  try {
+    // Process in transaction or loop (upsert)
+    for (const item of data) {
+      await prisma.nMC_AbsenceTreatment.upsert({
+        where: {
+          date_driverName_vehicleNumber: {
+            date: item.date,
+            driverName: item.driverName,
+            vehicleNumber: item.vehicleNumber
+          }
+        },
+        update: {
+          isTreated: item.isTreated,
+          remarks: item.remarks
+        },
+        create: {
+          date: item.date,
+          driverName: item.driverName,
+          vehicleNumber: item.vehicleNumber,
+          isTreated: item.isTreated,
+          remarks: item.remarks
+        }
+      });
+    }
+    return { success: true };
+  } catch (error: any) {
+    console.error('Failed to save absence treatments:', error);
+    return { success: false, error: error.message };
+  }
 }
 
 function getDayOfWeek(date: Date) {

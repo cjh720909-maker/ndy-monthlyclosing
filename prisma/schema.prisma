@@ -265,3 +265,16 @@ model NMC_Turn2Vehicle {
   updatedAt            DateTime
   NMC_Turn2RateHistory NMC_Turn2RateHistory[]
 }
+model NMC_AbsenceTreatment {
+  id            Int      @id @default(autoincrement())
+  date          String
+  driverName    String
+  vehicleNumber String
+  isTreated     Boolean  @default(false)
+  remarks       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([date, driverName, vehicleNumber])
+  @@map("NMC_AbsenceTreatment")
+}

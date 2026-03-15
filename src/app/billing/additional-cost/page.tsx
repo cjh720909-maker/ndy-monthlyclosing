@@ -132,9 +132,9 @@ export default function AdditionalCostPage() {
   return (
     <div className="max-w-4xl mx-auto pt-0">
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Left: Input Form */}
-        <div className="md:col-span-2">
+        <div className="md:col-span-1">
           <div className="glass rounded-2xl border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-5">
             <div className="flex items-center justify-between mb-3 border-b border-slate-50 pb-2">
               <h2 className="text-sm font-bold text-slate-800 flex items-center gap-2">
@@ -186,8 +186,8 @@ export default function AdditionalCostPage() {
                       key={item.id}
                       onClick={() => setFormData({ ...formData, type: item.id })}
                       className={`flex items-center justify-center gap-1.5 py-2 rounded-xl border transition-all text-xs font-bold ${formData.type === item.id
-                          ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-200'
-                          : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
+                        ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-200'
+                        : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
                         }`}
                     >
                       <item.icon size={14} />
@@ -366,8 +366,13 @@ export default function AdditionalCostPage() {
                           {item.contractType === 'fixed' ? '월' : item.contractType === 'daily' ? '일' : '시'}
                         </span>
                       </div>
-                      <p className="text-[10px] text-slate-400 font-medium">
+                      <p className="text-[10px] text-slate-400 font-medium flex items-center gap-1 mt-0.5">
                         {item.type === 'picking' ? '현장 피킹 알바' : item.type === 'turn2' ? '2회전 배송' : '지원 수당'}
+                        <span className="mx-1 opacity-30">•</span>
+                        <span className="flex items-center gap-0.5 text-indigo-400">
+                          <Clock size={10} />
+                          {item.workingHours}시간
+                        </span>
                       </p>
                     </div>
 

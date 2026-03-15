@@ -47,8 +47,8 @@ const menuItems = [
   },
   {
     id: 'additional-cost',
-    name: '추가 비용 등록',
-    enName: 'Additional Cost',
+    name: '피킹파트 비용등록',
+    enName: 'Picking Part Cost',
     component: <AdditionalCostPage />,
     icon: PenTool
   },

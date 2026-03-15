@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import { 
-  PenTool, 
-  Save, 
-  Trash2, 
-  Plus, 
-  Minus, 
+import {
+  PenTool,
+  Save,
+  Trash2,
+  Plus,
+  Minus,
   Calendar,
   User,
   Settings,
@@ -23,7 +23,7 @@ export default function AdditionalCostPage() {
   const [loading, setLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
   const [costs, setCosts] = useState<any[]>([]);
-  
+
   const [formData, setFormData] = useState({
     name: '',
     type: 'picking',
@@ -82,7 +82,7 @@ export default function AdditionalCostPage() {
     }
 
     setSaveLoading(true);
-    
+
     let result;
     const payload = {
       year,
@@ -96,20 +96,20 @@ export default function AdditionalCostPage() {
     };
 
     if (editId) {
-        // Update
-        // We need to import updateAdditionalCost first! 
-        // Note: I will add the import in a separate block or assume it's added.
-        // Actually, let's use the tool again to add import if needed or just use it if available in scope.
-        // Wait, I need to add updateAdditionalCost to imports.
-        // For now, I'll write the logic assuming it will be imported.
-        // Actually, I'll do the import in a separate block to be safe.
-        // But TS might complain if I use it here without import.
-        // I will trust the next step to fix imports.
-        const { updateAdditionalCost } = await import('./actions'); 
-        result = await updateAdditionalCost(editId, payload);
+      // Update
+      // We need to import updateAdditionalCost first! 
+      // Note: I will add the import in a separate block or assume it's added.
+      // Actually, let's use the tool again to add import if needed or just use it if available in scope.
+      // Wait, I need to add updateAdditionalCost to imports.
+      // For now, I'll write the logic assuming it will be imported.
+      // Actually, I'll do the import in a separate block to be safe.
+      // But TS might complain if I use it here without import.
+      // I will trust the next step to fix imports.
+      const { updateAdditionalCost } = await import('./actions');
+      result = await updateAdditionalCost(editId, payload);
     } else {
-        // Create
-        result = await createAdditionalCost(payload);
+      // Create
+      result = await createAdditionalCost(payload);
     }
 
     if (result.success) {
@@ -131,7 +131,7 @@ export default function AdditionalCostPage() {
 
   return (
     <div className="max-w-4xl mx-auto pt-0">
-      
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {/* Left: Input Form */}
         <div className="md:col-span-2">
@@ -143,11 +143,13 @@ export default function AdditionalCostPage() {
               </h2>
               <div className="relative">
                 <Calendar size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-indigo-500 pointer-events-none" />
-                <select 
+                <select
                   value={year}
                   onChange={(e) => setYear(e.target.value)}
                   className="pl-8 pr-8 py-1 bg-indigo-50 border border-indigo-100 rounded-lg text-xs font-bold text-indigo-700 appearance-none focus:outline-none focus: ring-2 focus:ring-indigo-500/20 shadow-sm cursor-pointer hover:bg-indigo-100 transition-colors"
                 >
+                  <option value="2022">2022년</option>
+                  <option value="2023">2023년</option>
                   <option value="2024">2024년</option>
                   <option value="2025">2025년</option>
                   <option value="2026">2026년</option>
@@ -161,11 +163,11 @@ export default function AdditionalCostPage() {
                 <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 ml-1">이름</label>
                 <div className="relative">
                   <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     placeholder="성함 또는 업체명"
                     value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all placeholder:text-slate-400"
                   />
                 </div>
@@ -174,25 +176,24 @@ export default function AdditionalCostPage() {
               {/* Type Selection */}
               <div>
                 <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 ml-1">추가 형태</label>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                    {[
-                      { id: 'picking', label: '현장 피킹 알바', icon: Settings },
-                      { id: 'turn2', label: '2회전 배송', icon: Clock },
-                      { id: 'support', label: '지원 수당', icon: DollarSign }
-                    ].map((item) => (
-                      <button 
-                        key={item.id}
-                        onClick={() => setFormData({...formData, type: item.id})}
-                        className={`flex items-center justify-center gap-1.5 py-2 rounded-xl border transition-all text-xs font-bold ${
-                          formData.type === item.id 
-                          ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-200' 
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                  {[
+                    { id: 'picking', label: '현장 피킹 알바', icon: Settings },
+                    { id: 'turn2', label: '2회전 배송', icon: Clock },
+                    { id: 'support', label: '지원 수당', icon: DollarSign }
+                  ].map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => setFormData({ ...formData, type: item.id })}
+                      className={`flex items-center justify-center gap-1.5 py-2 rounded-xl border transition-all text-xs font-bold ${formData.type === item.id
+                          ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-200'
                           : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
                         }`}
-                      >
-                        <item.icon size={14} />
-                        {item.label}
-                      </button>
-                    ))}
+                    >
+                      <item.icon size={14} />
+                      {item.label}
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -200,9 +201,9 @@ export default function AdditionalCostPage() {
                 {/* Contract Type */}
                 <div>
                   <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 ml-1">단가 유형</label>
-                  <select 
+                  <select
                     value={formData.contractType}
-                    onChange={(e) => setFormData({...formData, contractType: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, contractType: e.target.value })}
                     className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all font-medium appearance-none"
                   >
                     <option value="fixed">월단가</option>
@@ -215,23 +216,23 @@ export default function AdditionalCostPage() {
                   <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 ml-1">금액 (원)</label>
                   <div className="relative flex items-center">
                     <DollarSign size={14} className="absolute left-3 z-10 text-slate-400" />
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       step="1000"
                       placeholder="0"
                       value={formData.baseRate}
-                      onChange={(e) => setFormData({...formData, baseRate: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, baseRate: e.target.value })}
                       className="w-full pl-8 pr-8 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all font-sans text-right"
                     />
                     <div className="absolute right-1 flex flex-col gap-0.5">
-                      <button 
-                        onClick={() => setFormData(prev => ({...prev, baseRate: String((Number(prev.baseRate) || 0) + 1000) }))}
+                      <button
+                        onClick={() => setFormData(prev => ({ ...prev, baseRate: String((Number(prev.baseRate) || 0) + 1000) }))}
                         className="p-0.5 hover:bg-slate-200 rounded text-slate-400 hover:text-indigo-600"
                       >
                         <Plus size={10} />
                       </button>
-                      <button 
-                        onClick={() => setFormData(prev => ({...prev, baseRate: String(Math.max(0, (Number(prev.baseRate) || 0) - 1000)) }))}
+                      <button
+                        onClick={() => setFormData(prev => ({ ...prev, baseRate: String(Math.max(0, (Number(prev.baseRate) || 0) - 1000)) }))}
                         className="p-0.5 hover:bg-slate-200 rounded text-slate-400 hover:text-red-600"
                       >
                         <Minus size={10} />
@@ -247,23 +248,23 @@ export default function AdditionalCostPage() {
                   <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 ml-1">수당 (원)</label>
                   <div className="relative flex items-center">
                     <TrendingUp size={14} className="absolute left-3 z-10 text-emerald-500" />
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       step="1000"
                       placeholder="지급 수당"
                       value={formData.allowance}
-                      onChange={(e) => setFormData({...formData, allowance: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, allowance: e.target.value })}
                       className="w-full pl-9 pr-8 py-2 bg-emerald-50/50 border border-emerald-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:bg-white transition-all font-sans font-bold text-emerald-700 text-right"
                     />
                     <div className="absolute right-1 flex flex-col gap-0.5">
-                      <button 
-                        onClick={() => setFormData(prev => ({...prev, allowance: String((Number(prev.allowance) || 0) + 1000) }))}
+                      <button
+                        onClick={() => setFormData(prev => ({ ...prev, allowance: String((Number(prev.allowance) || 0) + 1000) }))}
                         className="p-0.5 hover:bg-emerald-200 rounded text-emerald-400 hover:text-emerald-700"
                       >
                         <Plus size={10} />
                       </button>
-                      <button 
-                        onClick={() => setFormData(prev => ({...prev, allowance: String(Math.max(0, (Number(prev.allowance) || 0) - 1000)) }))}
+                      <button
+                        onClick={() => setFormData(prev => ({ ...prev, allowance: String(Math.max(0, (Number(prev.allowance) || 0) - 1000)) }))}
                         className="p-0.5 hover:bg-emerald-200 rounded text-emerald-400 hover:text-emerald-700"
                       >
                         <Minus size={10} />
@@ -274,29 +275,29 @@ export default function AdditionalCostPage() {
 
                 {/* Working Hours Field */}
                 <div>
-                   <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 ml-1">하루 근무 시간</label>
-                   <div className="relative flex items-center">
-                      <Clock size={14} className="absolute left-3 z-10 text-slate-400" />
-                      <input 
-                        type="number" 
-                        step="0.5"
-                        placeholder="9"
-                        value={formData.workingHours}
-                        onChange={(e) => setFormData({...formData, workingHours: e.target.value})}
-                        className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all font-sans text-right"
-                      />
-                   </div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 ml-1">하루 근무 시간</label>
+                  <div className="relative flex items-center">
+                    <Clock size={14} className="absolute left-3 z-10 text-slate-400" />
+                    <input
+                      type="number"
+                      step="0.5"
+                      placeholder="9"
+                      value={formData.workingHours}
+                      onChange={(e) => setFormData({ ...formData, workingHours: e.target.value })}
+                      className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all font-sans text-right"
+                    />
+                  </div>
                 </div>
               </div>
 
               {/* Note Field */}
               <div>
                 <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 ml-1">비고</label>
-                <textarea 
+                <textarea
                   rows={2}
                   placeholder="메모사항"
                   value={formData.note}
-                  onChange={(e) => setFormData({...formData, note: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, note: e.target.value })}
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all resize-none"
                 />
               </div>
@@ -304,15 +305,15 @@ export default function AdditionalCostPage() {
               {/* Action Buttons */}
               <div className="pt-2 flex gap-2">
                 {editId && (
-                    <button 
-                      onClick={handleCancelEdit}
-                      disabled={saveLoading}
-                      className="w-1/3 py-3 bg-white border border-slate-200 text-slate-500 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all active:scale-[0.98]"
-                    >
-                      취소
-                    </button>
+                  <button
+                    onClick={handleCancelEdit}
+                    disabled={saveLoading}
+                    className="w-1/3 py-3 bg-white border border-slate-200 text-slate-500 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all active:scale-[0.98]"
+                  >
+                    취소
+                  </button>
                 )}
-                <button 
+                <button
                   onClick={handleSave}
                   disabled={saveLoading}
                   className="flex-1 py-3 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-all active:scale-[0.98] shadow-lg shadow-slate-200 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
@@ -369,7 +370,7 @@ export default function AdditionalCostPage() {
                         {item.type === 'picking' ? '현장 피킹 알바' : item.type === 'turn2' ? '2회전 배송' : '지원 수당'}
                       </p>
                     </div>
-                    
+
                     <div className="flex items-center gap-1">
                       <div className="text-right mr-2">
                         <p className="text-[11px] font-black text-indigo-600 font-sans">
@@ -381,15 +382,15 @@ export default function AdditionalCostPage() {
                           </p>
                         )}
                       </div>
-                      
-                      <button 
+
+                      <button
                         onClick={() => handleEdit(item)}
                         className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
                       >
-                         <PenTool size={12} />
+                        <PenTool size={12} />
                       </button>
 
-                      <button 
+                      <button
                         onClick={() => handleDelete(item.id)}
                         className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
                       >
